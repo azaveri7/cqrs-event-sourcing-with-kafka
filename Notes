@@ -1,0 +1,41 @@
+===============
+Docker
+===============
+
+docker --version
+
+docker ps -a
+
+docker network create --attachable -d bridge techbankNet
+
+docker network ls
+
+docker-compose --version
+
+===============
+Kafka
+===============
+
+Note: use the docker-compose.yml present in root directory and not the one in Materials folder.
+
+The one in the Materials folder mention latest tag for Kafka, and latest Kafka version does not use zookeeper
+
+
+
+docker-compose up -d
+
+The above command install kafka broker and zookeeper listed in docker-compose file
+
+===============
+MongoDB setup
+===============
+
+docker run -it -d --name mongo-container -p 27017:27017 --network techbankNet --restart always -v mongo_data_container:/data/db mongo:latest
+
+===============
+MySQL setup
+===============
+
+docker run -it -d --name mysql-container -p 3306:3306 --network techbankNet -e MYSQL_ROOT_PASSWORD=techbankRootPwd --restart always -v mysql__data_container:/var/lib/mysql mysql:latest
+
+docker run -it -d --name adminer -p 8080:8080 --network techbankNet -e ADMINER_DEFAULT_SERVER=mysql-container --restart always adminer:latest
