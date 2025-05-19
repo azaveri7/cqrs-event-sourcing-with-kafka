@@ -51,3 +51,15 @@ Promotes loose coupling by preventing objects from referring to each other expli
 
 Simplifies communication between objects by introducing a single object known as the
 mediator that manages the distribution of messages among other objects.
+
+=================
+Aggregate
+=================
+
+An Aggregate is an entity or group  of entities that is always kept in  a consistent state.
+
+The Aggregate root is the entity within the Aggregate that is responsible for maintaining
+this consistent state.
+
+This makes the Aggregate the primary building block for implementing a command model in any
+CQRS based application.
