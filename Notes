@@ -39,3 +39,15 @@ MySQL setup
 docker run -it -d --name mysql-container -p 3306:3306 --network techbankNet -e MYSQL_ROOT_PASSWORD=techbankRootPwd --restart always -v mysql__data_container:/var/lib/mysql mysql:latest
 
 docker run -it -d --name adminer -p 8080:8080 --network techbankNet -e ADMINER_DEFAULT_SERVER=mysql-container --restart always adminer:latest
+
+
+=================
+Mediator Pattern
+=================
+
+Behavioral design Pattern
+
+Promotes loose coupling by preventing objects from referring to each other explicitly.
+
+Simplifies communication between objects by introducing a single object known as the
+mediator that manages the distribution of messages among other objects.
