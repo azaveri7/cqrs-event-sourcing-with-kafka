@@ -63,3 +63,19 @@ this consistent state.
 
 This makes the Aggregate the primary building block for implementing a command model in any
 CQRS based application.
+
+=================
+Event store
+=================
+
+An event store must be an append only store, no update or delete operations should be allowed.
+
+Each event that is saved should represent the version or state of an aggregate at any given point
+in time.
+
+Events should be stored in chronological order, and new events should be appended to the previous
+event.
+
+The state of the aggregate should be recreatable by replaying the event store.
+
+Implement optimistic concurrency control
