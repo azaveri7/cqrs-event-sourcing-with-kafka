@@ -68,6 +68,9 @@ CQRS based application.
 Event store
 =================
 
+An event store is a database that is used to store data as a sequence of immutable events
+over time.
+
 An event store must be an append only store, no update or delete operations should be allowed.
 
 Each event that is saved should represent the version or state of an aggregate at any given point
@@ -79,3 +82,10 @@ event.
 The state of the aggregate should be recreatable by replaying the event store.
 
 Implement optimistic concurrency control
+
+Event sourcing is based on building the state of the aggregate based on the order of the sequence
+of events. For the state to be correct, it is important that the ordering of events is enforced
+by implementing event versioning. Optimistic concurrency control is then used to ensure that only the
+expected event versions can alter the state of the aggregate at any given point in time. This is in
+especially important when two or more clients requests are made at the same time to alter the state of
+the aggregate.
