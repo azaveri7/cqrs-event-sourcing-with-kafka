@@ -89,3 +89,50 @@ by implementing event versioning. Optimistic concurrency control is then used to
 expected event versions can alter the state of the aggregate at any given point in time. This is in
 especially important when two or more clients requests are made at the same time to alter the state of
 the aggregate.
+
+=================
+Domain driven design
+=================
+
+An approach to structure and model software in a way that it matches the business domain.
+
+Refers to problems as domains and aims to establish a common language to talk about these problems
+
+Describes independent problem areas as Bounded Contexts
+
+Bounded context - is an independent problem area.
+
+Describes a logical boundary within which a particular model is defined and applicable.
+
+Each bounded context correlates to a microservice. (e.g. BankAccount Microserve)
+
+====================
+Important notes:
+====================
+The responsibility for retrieving events from the Event Store and invoking
+the replayEvents method lies with the EventSourcingHandler, not the EventHandler,
+which operates on the read or query side.
+
+This distinction is crucial for understanding how different components work in an
+event-sourced architecture.
+
+The EventHandler indeed updates the read database via the AccountRepository after
+consuming an event, which is essential for maintaining the accuracy of the read model
+in an event-sourced architecture.
+
+This understanding is key to seeing how events are processed and data is synchronized
+in such systems.
+
+====================
+Kafka consumer
+====================
+
+Kafka tracks a separate consumer offset for each consumer group to allow
+distinct groups of consumers to independently manage their reading progress from a topic.
+
+This design enables effective scaling and load balancing among consumers within the same group
+while still ensuring that every group can track its own offset without interfering with others.
+
+The order of events in Kafka is indeed critical; it ensures that events are processed
+in the sequence they occur, which is essential for maintaining consistency
+and accuracy in event-sourced systems.
