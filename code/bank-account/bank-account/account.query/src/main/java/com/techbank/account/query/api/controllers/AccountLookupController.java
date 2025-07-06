@@ -87,7 +87,7 @@ public class AccountLookupController {
         }
     }
 
-    @GetMapping(path = "/withBalance/{equalityType/{balance}")
+    @GetMapping(path = "/withBalance/{equalityType}/{balance}")
     public ResponseEntity<AccountLookupResponse> getAccountsByBalance(@PathVariable(value = "equalityType") EqualityType equalityType,
                                                                       @PathVariable(value = "balance") double balance) {
         try {

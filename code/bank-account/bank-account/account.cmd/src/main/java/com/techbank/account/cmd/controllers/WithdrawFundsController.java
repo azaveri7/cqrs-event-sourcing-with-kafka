@@ -21,19 +21,19 @@ public class WithdrawFundsController {
     @Autowired
     private CommandDispatcher commandDispatcher;
 
-    @DeleteMapping(path = "/{id}")
-    public ResponseEntity<BaseResponse> depositFunds(@PathVariable(value = "id") String id,
-                                                     @RequestBody CloseAccountCommand command) {
+    @PutMapping(path = "/{id}")
+    public ResponseEntity<BaseResponse> withdrawFunds(@PathVariable(value = "id") String id,
+                                                     @RequestBody WithdrawFundsCommand command) {
         try {
             command.setId(id);
             commandDispatcher.send(command);
-            return new ResponseEntity<>(new BaseResponse("Close bank account request completed successfully"),
+            return new ResponseEntity<>(new BaseResponse("Withdraw funds request completed successfully"),
                     HttpStatus.OK);
         } catch (IllegalStateException e) {
             logger.log(Level.WARNING, MessageFormat.format("Client made a bad request - {0}", e.toString()));
             return new ResponseEntity<>(new BaseResponse(e.toString()), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            var safeErrorMessage = MessageFormat.format("Error while processing request to close bank account for id = {0}", id);
+            var safeErrorMessage = MessageFormat.format("Error while processing request to Withdraw funds for id = {0}", id);
             logger.log(Level.SEVERE, safeErrorMessage, e);
             return new ResponseEntity<>(new BaseResponse(safeErrorMessage), HttpStatus.INTERNAL_SERVER_ERROR);
         }

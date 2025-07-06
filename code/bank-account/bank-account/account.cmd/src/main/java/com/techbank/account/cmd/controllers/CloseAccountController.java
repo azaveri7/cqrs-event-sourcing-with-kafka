@@ -25,7 +25,7 @@ public class CloseAccountController {
     private CommandDispatcher commandDispatcher;
 
     @PostMapping
-    public ResponseEntity<BaseResponse> openAccount(@RequestBody CloseAccountCommand command) {
+    public ResponseEntity<BaseResponse> closeAccount(@RequestBody CloseAccountCommand command) {
         var id = UUID.randomUUID().toString();
         command.setId(id);
         try {

@@ -28,6 +28,7 @@ public class AccountEventSourcingHandler implements EventSourcingHandler<Account
         if(Objects.nonNull(events) || !events.isEmpty()) {
             aggregate.replayEvents(events);
             var latestVersion = events.stream().map(x -> x.getVersion()).max(Comparator.naturalOrder());
+            aggregate.setVersion(latestVersion.get());
         }
         return aggregate;
     }
