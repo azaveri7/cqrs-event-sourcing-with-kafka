@@ -9,7 +9,7 @@ import java.util.Date;
 
 @Data
 @Builder
-@Document(collation = "eventStore")//this tells spring that this model can be persisted in the mongodb database
+@Document(collation = "en")//this tells spring that this model can be persisted in the mongodb database
 public class EventModel {
     @Id
     private String id;

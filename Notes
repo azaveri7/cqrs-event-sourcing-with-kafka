@@ -1,4 +1,9 @@
 ===============
+Udemy course
+===============
+https://www.udemy.com/course/java-microservices-cqrs-event-sourcing-with-kafka/
+
+===============
 Docker
 ===============
 
@@ -136,3 +141,526 @@ while still ensuring that every group can track its own offset without interferi
 The order of events in Kafka is indeed critical; it ensures that events are processed
 in the sequence they occur, which is essential for maintaining consistency
 and accuracy in event-sourced systems.
+
+
+=========================
+Spring boot application
+=========================
+
+CommandApplication, QueryApplication
+
+Payloads:
+--------------
+Open Account
+--------------
+http://localhost:5000/api/v1/openBankAccount
+
+{
+    "accountHolder": "Anand Zaveri",
+    "accountType": "SAVINGS",
+    "openingBalance":50.00
+}
+
+Data is first stored in MongoDB and
+then sent to Kafka topic
+and then from topic to Kafka consumer
+and then stored in MySQL server.
+
+The data is stored as BSON data in MondoDB
+
+The collection is as :
+
+{
+    "_id" : ObjectId("686a917714b0945bb4eb7174"),
+    "timestamp" : ISODate("2025-07-06T15:08:32.654+0000"),
+    "aggregateIdentifier" : "1aa20ba9-50b3-4423-a51d-c0036917dda3",
+    "aggregateType" : "com.techbank.account.cmd.domain.AccountAggregate",
+    "version" : NumberInt(0),
+    "eventType" : "com.techbank.account.common.events.AccountOpenedEvent",
+    "eventData" : {
+        "_id" : "1aa20ba9-50b3-4423-a51d-c0036917dda3",
+        "accountHolderName" : "Anand Zaveri",
+        "accountType" : "SAVINGS",
+        "createdDate" : ISODate("2025-07-06T15:07:37.544+0000"),
+        "openingBalance" : 50.0,
+        "version" : NumberInt(0),
+        "_class" : "com.techbank.account.common.events.AccountOpenedEvent"
+    },
+    "_class" : "com.techbank.cqrs.core.events.EventModel"
+}
+
+--------------
+Deposit funds
+--------------
+http://localhost:5000/api/v1/depositFunds/1aa20ba9-50b3-4423-a51d-c0036917dda3
+
+{
+    "amount":100.00
+}
+
+MongoDB collection:
+
+{
+    "_id" : ObjectId("686a97fa14b0945bb4eb7175"),
+    "timestamp" : ISODate("2025-07-06T15:36:17.626+0000"),
+    "aggregateIdentifier" : "1aa20ba9-50b3-4423-a51d-c0036917dda3",
+    "aggregateType" : "com.techbank.account.cmd.domain.AccountAggregate",
+    "version" : NumberInt(1),
+    "eventType" : "com.techbank.account.common.events.FundsDepositedEvent",
+    "eventData" : {
+        "_id" : "1aa20ba9-50b3-4423-a51d-c0036917dda3",
+        "amount" : 100.0,
+        "version" : NumberInt(1),
+        "_class" : "com.techbank.account.common.events.FundsDepositedEvent"
+    },
+    "_class" : "com.techbank.cqrs.core.events.EventModel"
+}
+
+update bank_account set account_holder=?,account_type=?,balance=?,creation_date=? where id=?
+
+select * from bankAccount.bank_account
+
+
+=======================================
+How to fix a bad record in Kafka topic
+=======================================
+
+docker ps
+
+CONTAINER ID   IMAGE                      COMMAND                  CREATED        STATUS          PORTS                                                  NAMES
+a8bfb8403d56   bitnami/kafka:3.3.2        "/opt/bitnami/script…"   19 hours ago   Up 20 minutes   0.0.0.0:9092->9092/tcp                                 cqrs-event-sourcing-with-kafka_kafka_1
+5f1c6ef93d10   bitnami/zookeeper:latest   "/opt/bitnami/script…"   19 hours ago   Up 20 minutes   2888/tcp, 3888/tcp, 0.0.0.0:2181->2181/tcp, 8080/tcp   cqrs-event-sourcing-with-kafka_zookeeper_1
+6bb0f0d0f56f   adminer:latest             "entrypoint.sh docke…"   7 weeks ago    Up 43 hours     0.0.0.0:8080->8080/tcp                                 adminer
+40853ed1947c   mysql:latest               "docker-entrypoint.s…"   7 weeks ago    Up 43 hours     0.0.0.0:3306->3306/tcp, 33060/tcp                      mysql-container
+118558abbb1d   mongo:latest               "docker-entrypoint.s…"   7 weeks ago    Up 43 hours     0.0.0.0:27017->27017/tcp                               mongo-container
+
+docker exec -it cqrs-event-sourcing-with-kafka_kafka_1 bash
+
+I have no name!@a8bfb8403d56:/$ kafka-console-consumer.sh \
+  --bootstrap-server localhost:9092 \
+  --topic AccountClosedEvent \
+  --from-beginning \
+  --max-messages 1 \
+  --property print.value=true
+
+  {"id":"1aa20ba9-50b3-4423-a51d-c0036917dda3","version":3}
+Processed a total of 1 messages
+
+I have no name!@a8bfb8403d56:/$ kafka-consumer-groups.sh \
+  --bootstrap-server localhost:9092 \
+  --group bankaccConsumer \
+  --topic AccountClosedEvent \
+  --reset-offsets --to-latest --execute
+
+GROUP                          TOPIC                          PARTITION  NEW-OFFSET
+bankaccConsumer                AccountClosedEvent             0          1
+I have no name!@a8bfb8403d56:/$ exit
+
+
+=================================
+Aggregation of events
+=================================
+
+CQRS works based on aggregateIdentifier
+
+all the events are stored as follows with different version values.
+
+db.getCollection("eventModel").find({})
+
+db.getCollection("eventModel").find({
+  aggregateIdentifier: "41830607-9380-4bc3-a4c6-bafbdb6fb120"
+})
+
+{
+    "_id" : ObjectId("686b9209a140b61adb616f5f"),
+    "timestamp" : ISODate("2025-07-07T09:23:16.233+0000"),
+    "aggregateIdentifier" : "41830607-9380-4bc3-a4c6-bafbdb6fb120",
+    "aggregateType" : "com.techbank.account.cmd.domain.AccountAggregate",
+    "version" : NumberInt(0),
+    "eventType" : "com.techbank.account.common.events.AccountOpenedEvent",
+    "eventData" : {
+        "_id" : "41830607-9380-4bc3-a4c6-bafbdb6fb120",
+        "accountHolderName" : "Neha Zaveri",
+        "accountType" : "CURRENT",
+        "createdDate" : ISODate("2025-07-07T09:21:38.874+0000"),
+        "openingBalance" : 70.0,
+        "version" : NumberInt(0),
+        "_class" : "com.techbank.account.common.events.AccountOpenedEvent"
+    },
+    "_class" : "com.techbank.cqrs.core.events.EventModel"
+}
+{
+    "_id" : ObjectId("686b93c6c4782b1837ffdcc3"),
+    "timestamp" : ISODate("2025-07-07T09:30:39.258+0000"),
+    "aggregateIdentifier" : "41830607-9380-4bc3-a4c6-bafbdb6fb120",
+    "aggregateType" : "com.techbank.account.cmd.domain.AccountAggregate",
+    "version" : NumberInt(1),
+    "eventType" : "com.techbank.account.common.events.FundsDepositedEvent",
+    "eventData" : {
+        "_id" : "41830607-9380-4bc3-a4c6-bafbdb6fb120",
+        "amount" : 100.0,
+        "version" : NumberInt(1),
+        "_class" : "com.techbank.account.common.events.FundsDepositedEvent"
+    },
+    "_class" : "com.techbank.cqrs.core.events.EventModel"
+}
+{
+    "_id" : ObjectId("686b98b234463c0a7a24a30a"),
+    "timestamp" : ISODate("2025-07-07T09:51:43.191+0000"),
+    "aggregateIdentifier" : "41830607-9380-4bc3-a4c6-bafbdb6fb120",
+    "aggregateType" : "com.techbank.account.cmd.domain.AccountAggregate",
+    "version" : NumberInt(2),
+    "eventType" : "com.techbank.account.common.events.FundsWithdrawnEvent",
+    "eventData" : {
+        "_id" : "41830607-9380-4bc3-a4c6-bafbdb6fb120",
+        "amount" : 40.0,
+        "version" : NumberInt(2),
+        "_class" : "com.techbank.account.common.events.FundsWithdrawnEvent"
+    },
+    "_class" : "com.techbank.cqrs.core.events.EventModel"
+}
+
+
+====================================================
+Summary of the course
+====================================================
+
+So we create a restoredbcontroller, which has a REST endpoint,
+which when called up, it will read all the aggregaterootids from the
+event store (MongoDB) and write it into write db (MySQL)
+
+So to try this, drop the database in the MYSQL and then call this
+REST end point.
+
+Now again if you check in MySQL, it is re-created.
+
+Now, if you note in one particular aggregateRootId, there are
+Account Open event, One or more FundsWithdrawnEvent or FundsDepositedEvent
+and may have AccountClosedEvent.
+
+So when we replay, since we have created multiple topics for each of these events,
+there is a possibility that Kafka consumer may process them in a different order.
+
+So to avoid this, we must create a separate topic for RestoreDb events, so
+that all the events are processed in the correct order.
+
+We have a version field in the BSON data that gives the correct order for a particular
+aggregateRootId.
+
+In case if you want to move from MySQL to Postgres Db, you can use this RestoreDB endpoint
+and configure Postgres instead of MySQL, so that entire data gets written into Postgres.
+
+
+************************************************
+Summary of changes for new topic for restore db
+************************************************
+To guarantee the order that events are consumed while the Event Store is replayed, all events need to be produced to the same single Kafka topic. In this way, all event messages will share the same commit offset/index. In order to achieve this, you need to make the following changes to your code:
+
+
+
+A. Produce/Command Side:
+
+1. Update application.yml file of account.cmd
+
+Add a setting for the single Kafka topic and call it BankAccountEvents. See # ADD IT HERE
+
+Once the topic has been added, your application.yml should look as follows:
+
+server:
+  port: 5000
+
+spring:
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: bankAccount
+  kafka:
+    producer:
+      bootstrap-servers: localhost:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    topic: BankAccountEvents # ADD IT HERE
+
+
+2. Update AccountEventStore
+
+Add a private field called topic and use the @Value annotation to retrieve the topic from the application.yml file
+
+@Value("${spring.kafka.topic}")
+private String topic;
+
+
+Instead of passing the event name (event.getClass().getSimpleName()) as the first parameter to the produce method, pass the topic field instead
+
+eventProducer.produce(topic, event);
+
+
+Once these updates have been made, the AccountEventStore class should look as follows:
+
+package com.techbank.account.cmd.infrastructure;
+
+import com.techbank.account.cmd.domain.AccountAggregate;
+import com.techbank.account.cmd.domain.EventStoreRepository;
+import com.techbank.cqrs.core.events.BaseEvent;
+import com.techbank.cqrs.core.events.EventModel;
+import com.techbank.cqrs.core.exceptions.AggregateNotFoundException;
+import com.techbank.cqrs.core.exceptions.ConcurrencyException;
+import com.techbank.cqrs.core.infrastructure.EventStore;
+import com.techbank.cqrs.core.producers.EventProducer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class AccountEventStore implements EventStore {
+    @Autowired
+    private EventProducer eventProducer;
+
+    @Autowired
+    private EventStoreRepository eventStoreRepository;
+
+    // CHANGE NO.1
+    @Value("${spring.kafka.topic}")
+    private String topic;
+
+    @Override
+    public void saveEvents(String aggregateId, Iterable<BaseEvent> events, int expectedVersion) {
+        var eventStream = eventStoreRepository.findByAggregateIdentifier(aggregateId);
+        if (expectedVersion != -1 && eventStream.get(eventStream.size() - 1).getVersion() != expectedVersion) {
+            throw new ConcurrencyException();
+        }
+        var version = expectedVersion;
+        for (var event: events) {
+           version++;
+           event.setVersion(version);
+           var eventModel = EventModel.builder()
+                   .timeStamp(new Date())
+                   .aggregateIdentifier(aggregateId)
+                   .aggregateType(AccountAggregate.class.getTypeName())
+                   .version(version)
+                   .eventType(event.getClass().getTypeName())
+                   .eventData(event)
+                   .build();
+           var persistedEvent = eventStoreRepository.save(eventModel);
+           if (!persistedEvent.getId().isEmpty()) {
+               eventProducer.produce(topic, event); // CHANGE NO.2
+           }
+        }
+    }
+
+    @Override
+    public List<BaseEvent> getEvents(String aggregateId) {
+        var eventStream = eventStoreRepository.findByAggregateIdentifier(aggregateId);
+        if (eventStream == null || eventStream.isEmpty()) {
+            throw new AggregateNotFoundException("Incorrect account ID provided!");
+        }
+        return eventStream.stream().map(x -> x.getEventData()).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> getAggregateIds() {
+        var eventStream = eventStoreRepository.findAll();
+        if (eventStream == null || eventStream.isEmpty()) {
+            throw new IllegalStateException("Could not retrieve event stream from the event store!");
+        }
+        return eventStream.stream().map(EventModel::getAggregateIdentifier).distinct().collect(Collectors.toList());
+    }
+}
+
+
+
+
+3. Update AccountEventSourcingHandler
+
+Add a private field called topic to the AccountEventSourcingHandler class also, and again use the @Value annotation to retrieve the topic from the application.yml file
+
+@Value("${spring.kafka.topic}")
+private String topic;
+
+
+Similarly, instead of passing the event name (event.getClass().getSimpleName()) as the first parameter of the produce method, pass the topic field instead
+
+eventProducer.produce(topic, event);
+
+
+Once these updates have been made, the AccountEventSourcingHandler class should look as follows:
+
+package com.techbank.account.cmd.infrastructure;
+
+import com.techbank.account.cmd.domain.AccountAggregate;
+import com.techbank.cqrs.core.domain.AggregateRoot;
+import com.techbank.cqrs.core.handlers.EventSourcingHandler;
+import com.techbank.cqrs.core.infrastructure.EventStore;
+import com.techbank.cqrs.core.producers.EventProducer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.util.Comparator;
+
+@Service
+public class AccountEventSourcingHandler implements EventSourcingHandler<AccountAggregate> {
+    @Autowired
+    private EventStore eventStore;
+
+    @Autowired
+    private EventProducer eventProducer;
+
+    @Value("${spring.kafka.topic}")
+    private String topic;
+
+    @Override
+    public void save(AggregateRoot aggregate) {
+        eventStore.saveEvents(aggregate.getId(), aggregate.getUncommittedChanges(), aggregate.getVersion());
+        aggregate.markChangesAsCommitted();
+    }
+
+    @Override
+    public AccountAggregate getById(String id) {
+        var aggregate = new AccountAggregate();
+        var events = eventStore.getEvents(id);
+        if (events != null && !events.isEmpty()) {
+            aggregate.replayEvents(events);
+            var latestVersion = events.stream().map(x -> x.getVersion()).max(Comparator.naturalOrder());
+            aggregate.setVersion(latestVersion.get());
+        }
+        return aggregate;
+    }
+
+    @Override
+    public void republishEvents() {
+        var aggregateIds = eventStore.getAggregateIds();
+        for(var aggregateId: aggregateIds) {
+            var aggregate = getById(aggregateId);
+            if (aggregate == null || !aggregate.getActive()) continue;
+            var events = eventStore.getEvents(aggregateId);
+            for(var event: events) {
+                eventProducer.produce(topic, event); // CHANGE IT HERE
+            }
+        }
+    }
+}
+
+
+
+
+B. Consumer/Query Side:
+
+1. Update application.yml file of account.query
+
+Add a setting for the single Kafka topic and call it BankAccountEvents. See # CHANGE N0.1
+
+Set the consumer poll-timeout to 900000 (15 minutes) to ensure that the consumer does not timeout during debugging. See # CHANGE N0.2
+
+server:
+  port: 5001
+
+spring:
+  jpa:
+    # postgreSQL jpa settings
+    database-platform: org.hibernate.dialect.PostgreSQL94Dialect
+    show-sql: true
+    hibernate:
+      ddl-auto: create
+    # MySQL jpa settings
+#    database-platform: org.hibernate.dialect.MySQL8Dialect
+#    show-sql: true
+#    hibernate:
+#      ddl-auto: update
+  datasource:
+    # postgreSQL datasource settings
+    initialization-mode: always
+    platform: postgres
+    url: jdbc:postgresql://localhost:5432/bankAccount
+    username: postgres
+    password: techbankRootPsw
+    #MySQL datasource settings
+  #    url: jdbc:mysql://localhost:3306/bankAccount?createDatabaseIfNotExist=true
+  #    username: root
+  #    password: techbankRootPsw
+  kafka:
+    topic: BankAccountEvents  # CHANGE NO.1
+    listener:
+      ack-mode: MANUAL_IMMEDIATE
+      poll-timeout: 900000    # CHANGE NO.2
+    consumer:
+      bootstrap-servers: localhost:9092
+      group-id: bankaccConsumer
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: '*'
+
+
+2. Update the EventConsumer interface
+
+Remove the event-specific consume methods
+
+The EventConsumer interface should now only have a single consume method with BaseEvent as the payload
+
+Once these changes have been made, the EventConsumer interface should look as follows:
+
+package com.techbank.account.query.infrastructure.consumers;
+
+import com.techbank.cqrs.core.events.BaseEvent;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.messaging.handler.annotation.Payload;
+
+public interface EventConsumer {
+    void consume(@Payload BaseEvent event, Acknowledgment ack);
+}
+
+
+3. Update AccountEventConsumer
+
+Remove the implementation of the event-specific consume methods
+
+Implement the single consume method that has BaseEvent as the payload
+
+Change the value of the topics field of the @KafkaListener annotation to ${spring.kafka.topic} to obtain the Kafka topic from the application.yml file
+
+Once the event has been consumed, use reflection to invoke the correct on handler method of the EventHandler
+
+The AccountEventConsumer should look as follows once all of these updates have been made:
+
+package com.techbank.account.query.infrastructure.consumers;
+
+import com.techbank.account.query.infrastructure.handlers.EventHandler;
+import com.techbank.cqrs.core.events.BaseEvent;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.stereotype.Service;
+
+@Service
+public class AccountEventConsumer implements EventConsumer {
+    @Autowired
+    private EventHandler eventHandler;
+
+    @KafkaListener(topics = "${spring.kafka.topic}", groupId = "${spring.kafka.consumer.group-id}")
+    @Override
+    public void consume(@Payload BaseEvent event, Acknowledgment ack) {
+        try {
+            var eventHandlerMethod = eventHandler.getClass().getDeclaredMethod("on", event.getClass());
+            eventHandlerMethod.setAccessible(true);
+            eventHandlerMethod.invoke(eventHandler, event);
+            ack.acknowledge();
+        } catch (Exception e) {
+            throw new RuntimeException("Error while consuming event", e);
+        }
+    }
+}
+
+
+To conclude, once you have made all of these code changes,
+restart the replaying of events process and you will see that the order is guaranteed every single time.
